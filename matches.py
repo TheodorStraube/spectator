@@ -5,13 +5,11 @@ from riotwatcher import RiotWatcher
 from static import Static
 from history import MatchHistory
 from match import *
+from util import do_slowly
 
 #  https://mushroom.teemo.gg/
 
 class Spectator:
-
-    limit_1 = 20
-    limit_2 = 100
 
     def __init__(self, api_key, region, summoner):
 
@@ -25,32 +23,12 @@ class Spectator:
 
         self.me = self.watcher.summoner.by_name(self.region, self.summoner)
 
+        #tim = self.watcher.summoner.by_name(self.region, 'Timmaable')
+
+        #res = self.watcher.spectator.by_summoner(self.region, tim['id'])
+        #print(res)
+
         self.static = Static(region, self.watcher)
-
-    def do_slowly(self, func, *args, **kwargs):
-        if func in self.processing:
-            count, delta = self.processing[func]
-        else:
-            count = 0
-            delta = []
-
-        if delta:
-            print(max(delta[-Spectator.limit_2:]) - min(delta[-Spectator.limit_2:]))
-
-            if max(delta[-Spectator.limit_1:]) - min(delta[-Spectator.limit_1:]) < 1 and len(delta) >= Spectator.limit_1:
-                print('nap')
-                time.sleep(1)
-            if max(delta[-Spectator.limit_2:]) - min(delta[-Spectator.limit_2:]) < 120 and len(delta) >= Spectator.limit_2:
-                print('sleep')
-                time.sleep(120 - (max(delta[-Spectator.limit_2:]) - min(delta[-Spectator.limit_2:])) + 1)
-            if len(delta) > max(Spectator.limit_1, Spectator.limit_2):
-                delta.remove(delta[0])
-
-        delta.append(time.time())
-
-        self.processing[func] = count + 1, delta
-        return func(*args, **kwargs)
-
 
     def load(self):
         self.history = MatchHistory()
@@ -76,7 +54,8 @@ class Spectator:
         for match in candidates:
             count += 1
             print(count)
-            players = self.do_slowly(self.watcher.match.by_id, self.region, match['gameId'])['participantIdentities']
+            do_slowly('riot_api', initial_count=1)
+            players = self.watcher.match.by_id(self.region, match['gameId']['participantIdentities'])
             for player in players:
                 if player['player']['accountId'] != self.me['accountId']:
                     if player['player']['summonerName'] in other_players:
@@ -87,8 +66,8 @@ class Spectator:
                         other_players[player['player']['summonerName']] = 1, [match]
             print([(player, other_players[player][0]) for player in other_players if other_players[player][0] > 1])
 
-spec = Spectator('RGAPI-89f6fc7e-3b3c-4c0e-9647-ff6ab382a276', 'euw1', 'Anzeige ist raus')
-spec.f()
+spec = Spectator('RGAPI-0197ae7d-bca8-4bf1-8490-88480a80d571', 'euw1', 'Anzeige ist raus')
+spec.load()
 #for i in range(10000):
 #    print(spec.do_slowly(max, range(i+1)))
 

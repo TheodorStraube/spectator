@@ -1,5 +1,6 @@
 import json
 from match import Match
+from util import do_slowly
 import time
 
 class MatchHistory:
@@ -19,18 +20,10 @@ class MatchHistory:
         matches = []
         self.accountId = accountId
 
-        t1 = t2 = time.time()
-
         while True:
+            print(len(self.items))
 
-            if count % limit_1 == limit_1 - 1 and time.time() - t1 > 1:
-                time.sleep(1)
-                t1 = time.time()
-
-            if count % limit_2 == limit_2 - 1 and time.time() - t2 > 120:
-                time.sleep(int(time.time() - t2 + 1))
-                t2 = time.time()
-
+            do_slowly('riot_api', initial_count=1)
             matches = watcher.match.matchlist_by_account(region, accountId, begin_index=count * max_items)['matches']
 
             if not matches:
